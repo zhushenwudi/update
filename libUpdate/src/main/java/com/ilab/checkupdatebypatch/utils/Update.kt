@@ -2,8 +2,8 @@ package com.ilab.checkupdatebypatch.utils
 
 import android.app.Application
 import android.content.Context
-import androidx.lifecycle.MutableLiveData
 import com.arialyy.aria.core.task.DownloadTask
+import com.kunminx.architecture.ui.callback.UnPeekLiveData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class Update {
-    private var updateStatus = MutableLiveData<Pair<Status, Any?>>()
+    private var updateStatus = UnPeekLiveData<Pair<Status, Any?>>()
     private lateinit var versionName: String
     private lateinit var versionCode: String
     private lateinit var appContext: Application
@@ -42,7 +42,7 @@ class Update {
     fun bind(
         scope: CoroutineScope,
         triple: Triple<Application, String, Pair<String, String>>,
-        mutableData: MutableLiveData<Pair<Status, Any?>>
+        mutableData: UnPeekLiveData<Pair<Status, Any?>>
     ): Update {
         viewModelScope = scope
         appContext = triple.first
