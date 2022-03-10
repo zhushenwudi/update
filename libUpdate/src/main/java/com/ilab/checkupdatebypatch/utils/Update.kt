@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.arialyy.aria.core.task.DownloadTask
 import com.kunminx.architecture.ui.callback.UnPeekLiveData
+import dev.utils.app.AppUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,7 +56,7 @@ class Update {
     }
 
     // 获取版本信息
-    fun getVersionInfo(data: UpdateBean, needRetry: Boolean, isManual: Boolean) {
+    fun getVersionInfo(data: UpdateBean, needRetry: Boolean, isManual: Boolean, autoInstall: Boolean = false) {
         if (needRetry) latestApkMd5 = data.md5
         // 最新版本两个返回都是 null
         if (data.apkPath == null && data.patchPath == null) {
@@ -64,7 +65,7 @@ class Update {
         }
         // 隔代更新
         if (data.patchPath == null) {
-            parseApkInfo(data, needRetry)
+            parseApkInfo(data, needRetry, autoInstall)
             return
         }
         // 差量更新
@@ -87,9 +88,9 @@ class Update {
     }
 
     // 解析全量apk信息
-    private fun parseApkInfo(data: UpdateBean, needRetry: Boolean) {
+    private fun parseApkInfo(data: UpdateBean, needRetry: Boolean, autoInstall: Boolean) {
         fileUrl = data.apkPath
-        if (needRetry) download(false, needRetry)
+        if (needRetry) download(false, needRetry, autoInstall)
         else updateStatus.postValue(
             Pair(
                 Status.FULL,
@@ -110,7 +111,7 @@ class Update {
     }
 
     // 下载更新文件
-    fun download(isPatch: Boolean, needRetry: Boolean = false) {
+    fun download(isPatch: Boolean, needRetry: Boolean = false, autoInstall: Boolean = false) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.READY, null))
             ApkUtils.delApk(path + NEW_APK_NAME)
@@ -130,7 +131,7 @@ class Update {
                                 updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
                                 return
                             }
-                            installApk()
+                            if (autoInstall) autoInstallApk() else installApk()
                         }
                     }
 
@@ -180,6 +181,22 @@ class Update {
         }
     }
 
+    // 全自动安装apk
+    private fun autoInstallApk() {
+        updateStatus.postValue(Pair(Status.FINISH, null))
+        path?.let {
+            if (it.isNotEmpty()) {
+                val fileName = it + NEW_APK_NAME
+                val file = File(fileName)
+                if (!file.exists() || !file.isFile) {
+                    updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                    return
+                }
+                AppUtils.installAppSilent(file, "-r", true)
+            }
+        }
+    }
+
     fun release() {
         MyAria.release()
     }
@@ -191,7 +208,6 @@ class Update {
         const val MD5_CHECKED_ERROR = "版本异常，无法升级"
         const val DOWNLOAD_ERROR = "下载文件异常"
         const val MERGE_FILE_ERROR = "文件校验失败"
-        const val GET_UPDATE_INFO_ERROR = "获取版本信息异常"
         const val PATCH_FILE_NAME = "patchfile.patch"
         const val NEW_APK_NAME = "new.apk"
     }
