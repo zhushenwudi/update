@@ -5,6 +5,8 @@ import android.content.Context
 import com.arialyy.aria.core.task.DownloadTask
 import com.kunminx.architecture.ui.callback.UnPeekLiveData
 import dev.utils.app.AppUtils
+import dev.utils.app.info.AppInfoBean
+import dev.utils.common.FileUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -37,9 +39,17 @@ class Update {
     init {
         try {
             System.loadLibrary("ApkPatchLibrary")
-        } catch (ignore: Exception) {}
+        } catch (ignore: Exception) {
+        }
     }
 
+    /**
+     * 绑定更新实体
+     *
+     * @param scope 上下文作用域
+     * @param triple first: app上下文; second: 包名; third: Pair(版本名, 版本号)
+     * @param mutableData 用于接收回调
+     */
     fun bind(
         scope: CoroutineScope,
         triple: Triple<Application, String, Pair<String, String>>,
@@ -55,31 +65,38 @@ class Update {
         return this
     }
 
-    // 获取版本信息
-    fun getVersionInfo(data: UpdateBean, needRetry: Boolean, isManual: Boolean, autoInstall: Boolean = false) {
-        if (needRetry) latestApkMd5 = data.md5
-        // 最新版本两个返回都是 null
+    /**
+     * 获取版本信息
+     *
+     * @param data 接口返回的实体类
+     * @param isManual 是否是手动触发
+     * @param autoInstall 是否自动安装
+     */
+    fun getVersionInfo(data: UpdateBean, isManual: Boolean, autoInstall: Boolean) {
+        latestApkMd5 = data.md5
+        // 最新版本: 两个返回都是 null
         if (data.apkPath == null && data.patchPath == null) {
             updateStatus.postValue(Pair(Status.LATEST, isManual))
             return
         }
-        // 隔代更新
+        // 全量更新
         if (data.patchPath == null) {
-            parseApkInfo(data, needRetry, autoInstall)
+            parseApkInfo(data, autoInstall)
             return
         }
         // 差量更新
         if (data.apkPath == null) {
-            parsePatchInfo(data)
+            parsePatchInfo(data, autoInstall)
             return
         }
     }
 
     // 解析差量patch信息
-    private fun parsePatchInfo(data: UpdateBean) {
+    private fun parsePatchInfo(data: UpdateBean, autoInstall: Boolean) {
         newMD5 = data.md5
         fileUrl = data.patchPath
-        updateStatus.postValue(
+        if (autoInstall) download(isPatch = true, autoInstall = true)
+        else updateStatus.postValue(
             Pair(
                 Status.PATCH,
                 Pair(data.message, parseLatestVersion(Regex(PATCH_REGEX), fileUrl!!))
@@ -88,9 +105,9 @@ class Update {
     }
 
     // 解析全量apk信息
-    private fun parseApkInfo(data: UpdateBean, needRetry: Boolean, autoInstall: Boolean) {
+    private fun parseApkInfo(data: UpdateBean, autoInstall: Boolean) {
         fileUrl = data.apkPath
-        if (needRetry) download(false, needRetry, autoInstall)
+        if (autoInstall) download(isPatch = false, autoInstall = true)
         else updateStatus.postValue(
             Pair(
                 Status.FULL,
@@ -110,12 +127,17 @@ class Update {
         return result.replace("-", ".")
     }
 
-    // 下载更新文件
-    fun download(isPatch: Boolean, needRetry: Boolean = false, autoInstall: Boolean = false) {
+    /**
+     * 下载更新文件
+     *
+     * @param isPatch 是否是差量更新方式
+     * @param autoInstall 是否全自动安装
+     */
+    fun download(isPatch: Boolean, autoInstall: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.READY, null))
-            ApkUtils.delApk(path + NEW_APK_NAME)
-            ApkUtils.delPatch(path + PATCH_FILE_NAME)
+            FileUtils.deleteFile(path + NEW_APK_NAME)
+            FileUtils.deleteFile(path + PATCH_FILE_NAME)
             // 保存文件的路径
             val loadedFilePath = if (isPatch) path + PATCH_FILE_NAME else path + NEW_APK_NAME
             fileUrl?.let {
@@ -125,9 +147,9 @@ class Update {
                     }
 
                     override fun onComplete(task: DownloadTask?) {
-                        if (isPatch) mergeApk()
+                        if (isPatch) mergeApk(autoInstall)
                         else {
-                            if (needRetry && !SignUtils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
+                            if (!MD5Utils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
                                 updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
                                 return
                             }
@@ -144,25 +166,44 @@ class Update {
     }
 
     // 合并APK
-    private fun mergeApk() {
+    private fun mergeApk(autoInstall: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.MERGE, null))
-            val oldApkPath = ApkUtils.getSourceApkPath(appContext, packageName)
+            val oldApkPath = getOldApkPath()
             // old apk不存在
             if (oldApkPath.isNullOrEmpty()) {
                 updateStatus.postValue(Pair(Status.ERROR, MERGE_FILE_ERROR))
                 return@launch
             }
-            val mergeResult = PatchUtils.patch(oldApkPath, path + NEW_APK_NAME, path + PATCH_FILE_NAME)
-            // 合并不成功 || 检查合并后的apk与真实md5不相同
-            if (mergeResult != 0 || !SignUtils.checkMd5(path + NEW_APK_NAME, newMD5)) {
+            val mergeResult = PatchUtils.patch(
+                oldApkPath,
+                path + NEW_APK_NAME,
+                path + PATCH_FILE_NAME
+            )
+            // 合并不成功
+            if (mergeResult != 0) {
                 updateStatus.postValue(Pair(Status.ERROR, MERGE_FILE_ERROR))
                 return@launch
             }
+            // 检查合并后的apk与真实md5不相同
+            if (!MD5Utils.checkMd5(path + NEW_APK_NAME, newMD5)) {
+                updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
+                return@launch
+            }
             withContext(Dispatchers.Main) {
-                installApk()
+                if (autoInstall) autoInstallApk() else installApk()
             }
         }
+    }
+
+    private fun getOldApkPath(): String? {
+        val clazz = Class.forName("dev.utils.app.info.AppInfoBean")
+        val con = clazz.constructors
+        if (con.isNotEmpty()) {
+            val appInfoBean = con[0].newInstance(AppUtils.getPackageInfo(0)) as AppInfoBean
+            return appInfoBean.sourceDir
+        }
+        return null
     }
 
     // 安装apk
@@ -176,7 +217,7 @@ class Update {
                     updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
                     return
                 }
-                ApkUtils.installApk(appContext, fileName, packageName)
+                AppUtils.installApp(file)
             }
         }
     }
@@ -197,6 +238,9 @@ class Update {
         }
     }
 
+    /**
+     * 释放下载器资源
+     */
     fun release() {
         MyAria.release()
     }
@@ -210,5 +254,6 @@ class Update {
         const val MERGE_FILE_ERROR = "文件校验失败"
         const val PATCH_FILE_NAME = "patchfile.patch"
         const val NEW_APK_NAME = "new.apk"
+        const val GET_UPDATE_INFO_ERROR = "获取版本信息异常"
     }
 }

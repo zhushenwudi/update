@@ -11,7 +11,7 @@ import java.security.MessageDigest;
 /**
  * apk 签名信息获取工具
  */
-public class SignUtils {
+public class MD5Utils {
 
     private static String bytes2Hex(byte[] src) {
         char[] res = new char[src.length * 2];
