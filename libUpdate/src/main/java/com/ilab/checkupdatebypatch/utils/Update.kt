@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.arialyy.aria.core.task.DownloadTask
 import com.kunminx.architecture.ui.callback.UnPeekLiveData
+import dev.utils.LogPrintUtils
 import dev.utils.app.AppUtils
 import dev.utils.app.info.AppInfoBean
 import dev.utils.common.FileUtils
@@ -169,10 +170,11 @@ class Update {
     private fun mergeApk(autoInstall: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.MERGE, null))
-            val oldApkPath = getOldApkPath()
+            val oldApkPath = ApkUtils.getSourceApkPath(appContext, packageName)
             // old apk不存在
             if (oldApkPath.isNullOrEmpty()) {
                 updateStatus.postValue(Pair(Status.ERROR, MERGE_FILE_ERROR))
+                LogPrintUtils.e("old apk不存在")
                 return@launch
             }
             val mergeResult = PatchUtils.patch(
@@ -183,11 +185,13 @@ class Update {
             // 合并不成功
             if (mergeResult != 0) {
                 updateStatus.postValue(Pair(Status.ERROR, MERGE_FILE_ERROR))
+                LogPrintUtils.e("合并不成功")
                 return@launch
             }
             // 检查合并后的apk与真实md5不相同
             if (!MD5Utils.checkMd5(path + NEW_APK_NAME, newMD5)) {
                 updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
+                LogPrintUtils.e("检查合并后的apk与真实md5不相同")
                 return@launch
             }
             withContext(Dispatchers.Main) {
