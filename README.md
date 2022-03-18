@@ -1,5 +1,5 @@
 [![GitHub](https://img.shields.io/badge/GitHub-update-blue.svg)]()
-[![GitHub license](https://img.shields.io/github/license/zhushenwudi/update.svg)](https://github.com/zhushenwudi/update/blob/master/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/zhushenwudi/update.svg)](https://github.com/zhushenwudi/update/blob/master/LICENCE)
 [![Jitpack](https://img.shields.io/badge/update-1.3-brightgreen.svg)]()
 
 ##引入方法
