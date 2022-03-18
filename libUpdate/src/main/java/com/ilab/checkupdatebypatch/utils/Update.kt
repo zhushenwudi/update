@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 class Update {
     private var updateStatus = UnPeekLiveData<Pair<Status, Any?>>()
@@ -22,7 +23,6 @@ class Update {
     private lateinit var packageName: String
     private var viewModelScope: CoroutineScope? = null
     private var latestApkMd5: String? = null
-    private var newMD5: String? = null
     private var fileUrl: String? = null
     private var path: String? = null
 
@@ -94,7 +94,6 @@ class Update {
 
     // 解析差量patch信息
     private fun parsePatchInfo(data: UpdateBean, autoInstall: Boolean) {
-        newMD5 = data.md5
         fileUrl = data.patchPath
         if (autoInstall) download(isPatch = true, autoInstall = true)
         else updateStatus.postValue(
@@ -152,6 +151,7 @@ class Update {
                         else {
                             if (!MD5Utils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
                                 updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
+                                LogPrintUtils.e("apk MD5校验失败")
                                 return
                             }
                             if (autoInstall) autoInstallApk() else installApk()
@@ -160,6 +160,7 @@ class Update {
 
                     override fun onFail(task: DownloadTask?) {
                         updateStatus.postValue(Pair(Status.ERROR, DOWNLOAD_ERROR))
+                        LogPrintUtils.e("下载失败")
                     }
                 })
             }
@@ -189,25 +190,15 @@ class Update {
                 return@launch
             }
             // 检查合并后的apk与真实md5不相同
-            if (!MD5Utils.checkMd5(path + NEW_APK_NAME, newMD5)) {
+            if (!MD5Utils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
                 updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
-                LogPrintUtils.e("检查合并后的apk与真实md5不相同")
+                LogPrintUtils.e("merge apk MD5校验失败")
                 return@launch
             }
             withContext(Dispatchers.Main) {
                 if (autoInstall) autoInstallApk() else installApk()
             }
         }
-    }
-
-    private fun getOldApkPath(): String? {
-        val clazz = Class.forName("dev.utils.app.info.AppInfoBean")
-        val con = clazz.constructors
-        if (con.isNotEmpty()) {
-            val appInfoBean = con[0].newInstance(AppUtils.getPackageInfo(0)) as AppInfoBean
-            return appInfoBean.sourceDir
-        }
-        return null
     }
 
     // 安装apk
@@ -219,6 +210,7 @@ class Update {
                 val file = File(fileName)
                 if (!file.exists() || !file.isFile) {
                     updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                    LogPrintUtils.e(FILE_MISS)
                     return
                 }
                 AppUtils.installApp(file)
@@ -235,6 +227,7 @@ class Update {
                 val file = File(fileName)
                 if (!file.exists() || !file.isFile) {
                     updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                    LogPrintUtils.e(FILE_MISS)
                     return
                 }
                 AppUtils.installAppSilent(file, "-r", true)
@@ -259,5 +252,6 @@ class Update {
         const val PATCH_FILE_NAME = "patchfile.patch"
         const val NEW_APK_NAME = "new.apk"
         const val GET_UPDATE_INFO_ERROR = "获取版本信息异常"
+        const val MD5_CHECKED_ALWAYS_ERROR = "校验文件持续异常，请稍后再试"
     }
 }
