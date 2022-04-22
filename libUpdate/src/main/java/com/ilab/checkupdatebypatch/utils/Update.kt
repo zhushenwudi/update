@@ -71,8 +71,9 @@ class Update {
      * @param data 接口返回的实体类
      * @param isManual 是否是手动触发
      * @param autoInstall 是否自动安装
+     * @param isForce 是否强制安装
      */
-    fun getVersionInfo(data: UpdateBean, isManual: Boolean, autoInstall: Boolean) {
+    fun getVersionInfo(data: UpdateBean, isManual: Boolean, autoInstall: Boolean, isForce: Boolean) {
         latestApkMd5 = data.md5
         // 最新版本: 两个返回都是 null
         if (data.apkPath == null && data.patchPath == null) {
@@ -81,20 +82,20 @@ class Update {
         }
         // 全量更新
         if (data.patchPath == null) {
-            parseApkInfo(data, autoInstall)
+            parseApkInfo(data, autoInstall, isForce)
             return
         }
         // 差量更新
         if (data.apkPath == null) {
-            parsePatchInfo(data, autoInstall)
+            parsePatchInfo(data, autoInstall, isForce)
             return
         }
     }
 
     // 解析差量patch信息
-    private fun parsePatchInfo(data: UpdateBean, autoInstall: Boolean) {
+    private fun parsePatchInfo(data: UpdateBean, autoInstall: Boolean, isForce: Boolean) {
         fileUrl = data.patchPath
-        if (autoInstall) download(isPatch = true, autoInstall = true)
+        if (autoInstall) download(isPatch = true, autoInstall = true, isForce = isForce)
         else updateStatus.postValue(
             Pair(
                 Status.PATCH,
@@ -104,9 +105,9 @@ class Update {
     }
 
     // 解析全量apk信息
-    private fun parseApkInfo(data: UpdateBean, autoInstall: Boolean) {
+    private fun parseApkInfo(data: UpdateBean, autoInstall: Boolean, isForce: Boolean) {
         fileUrl = data.apkPath
-        if (autoInstall) download(isPatch = false, autoInstall = true)
+        if (autoInstall) download(isPatch = false, autoInstall = true, isForce = isForce)
         else updateStatus.postValue(
             Pair(
                 Status.FULL,
@@ -131,8 +132,9 @@ class Update {
      *
      * @param isPatch 是否是差量更新方式
      * @param autoInstall 是否全自动安装
+     * @param isForce 是否强制安装
      */
-    fun download(isPatch: Boolean, autoInstall: Boolean) {
+    fun download(isPatch: Boolean, autoInstall: Boolean, isForce: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.READY, null))
             FileUtils.deleteFile(path + NEW_APK_NAME)
@@ -146,14 +148,23 @@ class Update {
                     }
 
                     override fun onComplete(task: DownloadTask?) {
-                        if (isPatch) mergeApk(autoInstall)
+                        if (isPatch) mergeApk(autoInstall, isForce)
                         else {
                             if (!MD5Utils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
                                 updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
                                 LogPrintUtils.e("apk MD5校验失败")
                                 return
                             }
-                            if (autoInstall) autoInstallApk() else installApk()
+                            updateStatus.postValue(Pair(Status.FINISH, null))
+                            if (isForce) {
+                                path?.run {
+                                    if (autoInstall) {
+                                        autoInstallApk(this)
+                                    } else {
+                                        installApk(this)
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -167,7 +178,7 @@ class Update {
     }
 
     // 合并APK
-    private fun mergeApk(autoInstall: Boolean) {
+    private fun mergeApk(autoInstall: Boolean, isForce: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.MERGE, null))
             val oldApkPath = ApkUtils.getSourceApkPath(appContext, packageName)
@@ -195,43 +206,50 @@ class Update {
                 return@launch
             }
             withContext(Dispatchers.Main) {
-                if (autoInstall) autoInstallApk() else installApk()
+                updateStatus.postValue(Pair(Status.FINISH, null))
+                if (isForce) {
+                    path?.run {
+                        if (autoInstall) {
+                            autoInstallApk(this)
+                        } else {
+                            installApk(this)
+                        }
+                    }
+                }
             }
         }
     }
 
-    // 安装apk
-    private fun installApk() {
-        updateStatus.postValue(Pair(Status.FINISH, null))
-        path?.let {
-            if (it.isNotEmpty()) {
-                val fileName = it + NEW_APK_NAME
-                val file = File(fileName)
-                if (!file.exists() || !file.isFile) {
-                    updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
-                    LogPrintUtils.e(FILE_MISS)
-                    return
-                }
-                AppUtils.installApp(file)
+    /**
+     * 显示界面安装apk
+     */
+    fun installApk(path: String) {
+        if (path.isNotEmpty()) {
+            val fileName = path + NEW_APK_NAME
+            val file = File(fileName)
+            if (!file.exists() || !file.isFile) {
+                updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                LogPrintUtils.e(FILE_MISS)
+                return
             }
+            AppUtils.installApp(file)
         }
     }
 
-    // 全自动安装apk
-    private fun autoInstallApk() {
-        updateStatus.postValue(Pair(Status.FINISH, null))
-        path?.let {
-            if (it.isNotEmpty()) {
-                val fileName = it + NEW_APK_NAME
-                val file = File(fileName)
-                if (!file.exists() || !file.isFile) {
-                    updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
-                    LogPrintUtils.e(FILE_MISS)
-                    return
-                }
-                ShellUtils.execCmd("chmod 777 $fileName", true)
-                AppUtils.installAppSilent(file, "-r", true)
+    /**
+     * 静默安装apk
+     */
+    fun autoInstallApk(path: String) {
+        if (path.isNotEmpty()) {
+            val fileName = path + NEW_APK_NAME
+            val file = File(fileName)
+            if (!file.exists() || !file.isFile) {
+                updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                LogPrintUtils.e(FILE_MISS)
+                return
             }
+            ShellUtils.execCmd("chmod 777 $fileName", true)
+            AppUtils.installAppSilent(file, "-r", true)
         }
     }
 
