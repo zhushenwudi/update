@@ -223,7 +223,7 @@ class Update {
     /**
      * 显示界面安装apk
      */
-    fun installApk(path: String) {
+    fun installApk(path: String = this.path ?: "") {
         if (path.isNotEmpty()) {
             val fileName = path + NEW_APK_NAME
             val file = File(fileName)
@@ -239,7 +239,7 @@ class Update {
     /**
      * 静默安装apk
      */
-    fun autoInstallApk(path: String) {
+    fun autoInstallApk(path: String = this.path ?: "") {
         if (path.isNotEmpty()) {
             val fileName = path + NEW_APK_NAME
             val file = File(fileName)
