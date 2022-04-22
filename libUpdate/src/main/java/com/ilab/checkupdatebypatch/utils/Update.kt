@@ -6,14 +6,13 @@ import com.arialyy.aria.core.task.DownloadTask
 import com.kunminx.architecture.ui.callback.UnPeekLiveData
 import dev.utils.LogPrintUtils
 import dev.utils.app.AppUtils
-import dev.utils.app.info.AppInfoBean
+import dev.utils.app.ShellUtils
 import dev.utils.common.FileUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
 
 class Update {
     private var updateStatus = UnPeekLiveData<Pair<Status, Any?>>()
@@ -230,6 +229,7 @@ class Update {
                     LogPrintUtils.e(FILE_MISS)
                     return
                 }
+                ShellUtils.execCmd("chmod 777 $fileName", true)
                 AppUtils.installAppSilent(file, "-r", true)
             }
         }
