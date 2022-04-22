@@ -15,6 +15,7 @@ import java.io.File
 object ApkUtils {
     const val DAEMON_PACKAGE = "com.ilab.cabinetdaemon"
     const val DAEMON_CLASS = "com.ilab.cabinetdaemon.MainActivity"
+
     /**
      * 获取已安装Apk文件的源Apk文件
      * 如：/data/app/com.sina.weibo-1.apk
@@ -79,12 +80,17 @@ object ApkUtils {
     }
 
     /**
-     * 删除最新的APK
+     * 删除APK
      */
-    fun removeApk(context: Context): Boolean {
+    fun removeApk(
+        context: Context,
+        filePath: String = context.getDir(
+            "update",
+            Context.MODE_PRIVATE
+        ).absolutePath + File.separator + Update.NEW_APK_NAME
+    ): Boolean {
         var isSuccess = false
-        val fileName = context.getDir("update", Context.MODE_PRIVATE).absolutePath + File.separator + Update.NEW_APK_NAME
-        val file = File(fileName)
+        val file = File(filePath)
         if (file.exists() && file.isFile) {
             isSuccess = FileUtils.deleteFile(file)
         }
