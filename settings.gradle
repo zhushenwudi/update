@@ -1,4 +1,4 @@
 rootProject.name = "LibUpdate"
-//include ':app'
+include ':app'
 include ':libUpdate'
-//include ':update'
+include ':update'

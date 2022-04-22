@@ -7,10 +7,10 @@ android {
     compileSdkVersion 31
 
     defaultConfig {
-        minSdkVersion 25
+        minSdkVersion 21
         targetSdkVersion 31
-        versionCode 4
-        versionName "1.3"
+        versionCode 5
+        versionName "1.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -37,5 +37,5 @@ dependencies {
     implementation 'me.laoyuyu.aria:core:3.8.16'
     compileOnly 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
     compileOnly 'com.kunminx.arch:unpeek-livedata:7.2.0-beta1'
-    compileOnly "io.github.afkt:DevAppX:2.2.8"
+    compileOnly "io.github.afkt:DevAppX:2.3.6"
 }
