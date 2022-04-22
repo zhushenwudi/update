@@ -2,7 +2,8 @@
 [![GitHub license](https://img.shields.io/github/license/zhushenwudi/update.svg)](https://github.com/zhushenwudi/update/blob/master/LICENCE)
 [![Jitpack](https://img.shields.io/badge/update-1.3-brightgreen.svg)]()
 
-##引入方法
+## 引入方法
+
 
 ```groovy
 allprojects {
@@ -20,7 +21,7 @@ dependencies {
 ```
 
 
-##使用案例
+## 使用案例
 
 在application.kt中
 
