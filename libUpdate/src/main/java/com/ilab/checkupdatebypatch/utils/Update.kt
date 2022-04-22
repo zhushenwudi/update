@@ -73,7 +73,7 @@ class Update {
      * @param autoInstall 是否自动安装
      * @param isForce 是否强制安装
      */
-    fun getVersionInfo(data: UpdateBean, isManual: Boolean, autoInstall: Boolean, isForce: Boolean) {
+    fun getVersionInfo(data: UpdateBean, isManual: Boolean, isForce: Boolean = true, autoInstall: Boolean = true) {
         latestApkMd5 = data.md5
         // 最新版本: 两个返回都是 null
         if (data.apkPath == null && data.patchPath == null) {
@@ -95,7 +95,7 @@ class Update {
     // 解析差量patch信息
     private fun parsePatchInfo(data: UpdateBean, autoInstall: Boolean, isForce: Boolean) {
         fileUrl = data.patchPath
-        if (autoInstall) download(isPatch = true, autoInstall = true, isForce = isForce)
+        if (autoInstall) download(isPatch = true, autoInstall = autoInstall, isForce = isForce)
         else updateStatus.postValue(
             Pair(
                 Status.PATCH,
@@ -107,7 +107,7 @@ class Update {
     // 解析全量apk信息
     private fun parseApkInfo(data: UpdateBean, autoInstall: Boolean, isForce: Boolean) {
         fileUrl = data.apkPath
-        if (autoInstall) download(isPatch = false, autoInstall = true, isForce = isForce)
+        if (autoInstall) download(isPatch = false, autoInstall = autoInstall, isForce = isForce)
         else updateStatus.postValue(
             Pair(
                 Status.FULL,
@@ -134,7 +134,7 @@ class Update {
      * @param autoInstall 是否全自动安装
      * @param isForce 是否强制安装
      */
-    fun download(isPatch: Boolean, autoInstall: Boolean, isForce: Boolean) {
+    fun download(isPatch: Boolean, isForce: Boolean = true, autoInstall: Boolean = true) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.READY, null))
             FileUtils.deleteFile(path + NEW_APK_NAME)
