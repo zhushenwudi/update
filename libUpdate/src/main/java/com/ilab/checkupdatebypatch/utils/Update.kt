@@ -223,34 +223,38 @@ class Update {
     /**
      * 显示界面安装apk
      */
-    fun installApk(path: String = this.path ?: "") {
-        if (path.isNotEmpty()) {
-            val fileName = path + NEW_APK_NAME
-            val file = File(fileName)
-            if (!file.exists() || !file.isFile) {
-                updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
-                LogPrintUtils.e(FILE_MISS)
-                return
-            }
-            AppUtils.installApp(file)
+    fun installApk(path: String? = null) {
+        val fileName = if (path.isNullOrEmpty()) {
+            this.path + NEW_APK_NAME
+        } else {
+            path
         }
+        val file = File(fileName)
+        if (!file.exists() || !file.isFile) {
+            updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+            LogPrintUtils.e(FILE_MISS)
+            return
+        }
+        AppUtils.installApp(file)
     }
 
     /**
      * 静默安装apk
      */
-    fun autoInstallApk(path: String = this.path ?: "") {
-        if (path.isNotEmpty()) {
-            val fileName = path + NEW_APK_NAME
-            val file = File(fileName)
-            if (!file.exists() || !file.isFile) {
-                updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
-                LogPrintUtils.e(FILE_MISS)
-                return
-            }
-            ShellUtils.execCmd("chmod 777 $fileName", true)
-            AppUtils.installAppSilent(file, "-r", true)
+    fun autoInstallApk(path: String? = null) {
+        val fileName = if (path.isNullOrEmpty()) {
+            this.path + NEW_APK_NAME
+        } else {
+            path
         }
+        val file = File(fileName)
+        if (!file.exists() || !file.isFile) {
+            updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+            LogPrintUtils.e(FILE_MISS)
+            return
+        }
+        ShellUtils.execCmd("chmod 777 $fileName", true)
+        AppUtils.installAppSilent(file, "-r", true)
     }
 
     /**

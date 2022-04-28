@@ -9,8 +9,6 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 5
-        versionName "1.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -27,7 +25,7 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 }
 
@@ -35,7 +33,7 @@ dependencies {
     compileOnly 'androidx.core:core-ktx:1.7.0'
     compileOnly 'androidx.appcompat:appcompat:1.4.1'
     implementation 'me.laoyuyu.aria:core:3.8.16'
-    compileOnly 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
+    compileOnly 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
     compileOnly 'com.kunminx.arch:unpeek-livedata:7.2.0-beta1'
     compileOnly "io.github.afkt:DevAppX:2.3.6"
 }
