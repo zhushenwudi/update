@@ -225,11 +225,11 @@ class Update {
      */
     fun installApk(path: String? = null) {
         val fileName = if (path.isNullOrEmpty()) {
-            this.path + NEW_APK_NAME
+            this.path
         } else {
             path
         }
-        val file = File(fileName)
+        val file = File(fileName + NEW_APK_NAME)
         if (!file.exists() || !file.isFile) {
             updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
             LogPrintUtils.e(FILE_MISS)
@@ -243,11 +243,11 @@ class Update {
      */
     fun autoInstallApk(path: String? = null) {
         val fileName = if (path.isNullOrEmpty()) {
-            this.path + NEW_APK_NAME
+            this.path
         } else {
             path
         }
-        val file = File(fileName)
+        val file = File(fileName + NEW_APK_NAME)
         if (!file.exists() || !file.isFile) {
             updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
             LogPrintUtils.e(FILE_MISS)
