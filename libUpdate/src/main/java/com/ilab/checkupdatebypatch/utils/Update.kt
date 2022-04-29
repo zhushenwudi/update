@@ -26,7 +26,6 @@ class Update {
         PATCH,          // 准备差量更新
         FULL,           // 准备全量更新
         LATEST,         // 当前为最新版本
-        READY,          // 准备下载文件
         DOWNLOADING,    // 下载文件中
         FINISH,         // 下载完成
         MERGE,         // 下载完成
@@ -133,8 +132,6 @@ class Update {
      */
     fun download(isPatch: Boolean, isForce: Boolean = true, autoInstall: Boolean = true) {
         viewModelScope?.launch(Dispatchers.IO) {
-            updateStatus.postValue(Pair(Status.READY, null))
-            delay(2000)
             FileUtils.deleteFile(path + NEW_APK_NAME)
             FileUtils.deleteFile(path + PATCH_FILE_NAME)
             // 保存文件的路径
