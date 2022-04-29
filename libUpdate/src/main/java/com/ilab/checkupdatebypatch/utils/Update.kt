@@ -134,6 +134,7 @@ class Update {
     fun download(isPatch: Boolean, isForce: Boolean = true, autoInstall: Boolean = true) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.READY, null))
+            delay(2000)
             FileUtils.deleteFile(path + NEW_APK_NAME)
             FileUtils.deleteFile(path + PATCH_FILE_NAME)
             // 保存文件的路径
@@ -178,7 +179,6 @@ class Update {
     private fun mergeApk(autoInstall: Boolean, isForce: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.MERGE, null))
-            delay(2000)
             val oldApkPath = ApkUtils.getSourceApkPath(appContext, packageName)
             // old apk不存在
             if (oldApkPath.isNullOrEmpty()) {
