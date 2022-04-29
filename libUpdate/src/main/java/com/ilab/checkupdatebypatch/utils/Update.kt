@@ -159,9 +159,9 @@ class Update {
                             if (isForce) {
                                 path?.run {
                                     if (autoInstall) {
-                                        autoInstallApk(this)
+                                        autoInstallApk(this + NEW_APK_NAME)
                                     } else {
-                                        installApk(this)
+                                        installApk(this + NEW_APK_NAME)
                                     }
                                 }
                             }
@@ -210,9 +210,9 @@ class Update {
                 if (isForce) {
                     path?.run {
                         if (autoInstall) {
-                            autoInstallApk(this)
+                            autoInstallApk(this + NEW_APK_NAME)
                         } else {
-                            installApk(this)
+                            installApk(this + NEW_APK_NAME)
                         }
                     }
                 }
@@ -223,13 +223,8 @@ class Update {
     /**
      * 显示界面安装apk
      */
-    fun installApk(path: String? = null) {
-        val fileName = if (path.isNullOrEmpty()) {
-            this.path
-        } else {
-            path
-        }
-        val file = File(fileName + NEW_APK_NAME)
+    fun installApk(path: String) {
+        val file = File(path)
         if (!file.exists() || !file.isFile) {
             updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
             LogPrintUtils.e(FILE_MISS)
@@ -241,19 +236,14 @@ class Update {
     /**
      * 静默安装apk
      */
-    fun autoInstallApk(path: String? = null) {
-        val fileName = if (path.isNullOrEmpty()) {
-            this.path
-        } else {
-            path
-        }
-        val file = File(fileName + NEW_APK_NAME)
+    fun autoInstallApk(path: String) {
+        val file = File(path)
         if (!file.exists() || !file.isFile) {
             updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
             LogPrintUtils.e(FILE_MISS)
             return
         }
-        ShellUtils.execCmd("chmod 777 $fileName", true)
+        ShellUtils.execCmd("chmod 777 $path", true)
         AppUtils.installAppSilent(file, "-r", true)
     }
 
