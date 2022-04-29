@@ -16,7 +16,7 @@ allprojects {
 
 ```groovy
 dependencies {
-    implementation 'com.github.zhushenwudi:update:1.3'
+    implementation 'com.github.zhushenwudi:update:1.6'
 }
 ```
 
