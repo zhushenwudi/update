@@ -58,9 +58,6 @@ App.instance.updateStatus.observe(viewLifecycleOwner) {
       Update.Status.LATEST -> {
          /** 最新版本 **/
       }
-      Update.Status.READY -> {
-         /** 准备下载 **/
-      }
       Update.Status.DOWNLOADING -> {
          /** 下载中，更新进度 **/
          Log.d("aaa", "下载进度: ${it.second as Int}")
