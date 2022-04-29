@@ -8,10 +8,7 @@ import dev.utils.LogPrintUtils
 import dev.utils.app.AppUtils
 import dev.utils.app.ShellUtils
 import dev.utils.common.FileUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.io.File
 
 class Update {
@@ -181,6 +178,7 @@ class Update {
     private fun mergeApk(autoInstall: Boolean, isForce: Boolean) {
         viewModelScope?.launch(Dispatchers.IO) {
             updateStatus.postValue(Pair(Status.MERGE, null))
+            delay(2000)
             val oldApkPath = ApkUtils.getSourceApkPath(appContext, packageName)
             // old apk不存在
             if (oldApkPath.isNullOrEmpty()) {
