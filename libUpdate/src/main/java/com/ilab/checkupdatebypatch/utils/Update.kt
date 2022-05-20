@@ -218,28 +218,36 @@ class Update {
     /**
      * 显示界面安装apk
      */
-    fun installApk(path: String) {
-        val file = File(path)
-        if (!file.exists() || !file.isFile) {
-            updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
-            LogPrintUtils.e(FILE_MISS)
-            return
+    fun installApk(path: String?) {
+        (path ?: this.path)?.let {
+            val file = File(it)
+            if (!file.exists() || !file.isFile) {
+                updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                LogPrintUtils.e(FILE_MISS)
+                return
+            }
+            AppUtils.installApp(file)
+        } ?: kotlin.run {
+            updateStatus.postValue(Pair(Status.ERROR, NOT_FOUND_APK))
         }
-        AppUtils.installApp(file)
     }
 
     /**
      * 静默安装apk
      */
-    fun autoInstallApk(path: String) {
-        val file = File(path)
-        if (!file.exists() || !file.isFile) {
-            updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
-            LogPrintUtils.e(FILE_MISS)
-            return
+    fun autoInstallApk(path: String?) {
+        (path ?: this.path)?.let {
+            val file = File(it)
+            if (!file.exists() || !file.isFile) {
+                updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
+                LogPrintUtils.e(FILE_MISS)
+                return
+            }
+            ShellUtils.execCmd("chmod 777 $it", true)
+            AppUtils.installAppSilent(file, "-r", true)
+        } ?: kotlin.run {
+            updateStatus.postValue(Pair(Status.ERROR, NOT_FOUND_APK))
         }
-        ShellUtils.execCmd("chmod 777 $path", true)
-        AppUtils.installAppSilent(file, "-r", true)
     }
 
     /**
@@ -258,6 +266,7 @@ class Update {
         const val MERGE_FILE_ERROR = "文件校验失败"
         const val PATCH_FILE_NAME = "patchfile.patch"
         const val NEW_APK_NAME = "new.apk"
+        const val NOT_FOUND_APK = "未找到安装包"
         const val GET_UPDATE_INFO_ERROR = "获取版本信息异常"
         const val MD5_CHECKED_ALWAYS_ERROR = "校验文件持续异常，请稍后再试"
     }
