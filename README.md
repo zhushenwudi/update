@@ -1,6 +1,6 @@
 [![GitHub](https://img.shields.io/badge/GitHub-update-blue.svg)]()
 [![GitHub license](https://img.shields.io/github/license/zhushenwudi/update.svg)](https://github.com/zhushenwudi/update/blob/master/LICENCE)
-[![Jitpack](https://img.shields.io/badge/update-1.3-brightgreen.svg)]()
+[![Jitpack](https://img.shields.io/badge/update-1.7-brightgreen)]()
 
 ## 引入方法
 
@@ -57,9 +57,6 @@ App.instance.updateStatus.observe(viewLifecycleOwner) {
 		}
       Update.Status.LATEST -> {
          /** 最新版本 **/
-      }
-      Update.Status.READY -> {
-         /** 准备下载 **/
       }
       Update.Status.DOWNLOADING -> {
          /** 下载中，更新进度 **/
