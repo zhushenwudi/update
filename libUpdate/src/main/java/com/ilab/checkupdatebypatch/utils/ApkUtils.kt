@@ -70,16 +70,13 @@ object ApkUtils {
         appPkgName: String,
         appClzName: String
     ) {
-        val isInstalled = AppUtils.isInstalledApp(DAEMON_PACKAGE)
-        if (isInstalled) {
-            val mIntent = Intent()
-            val componentName = ComponentName(DAEMON_PACKAGE, DAEMON_CLASS)
-            mIntent.component = componentName
-            mIntent.putExtra("pkg", appPkgName)
-            mIntent.putExtra("cls", appClzName)
-            mIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            context.startActivity(mIntent)
-        }
+        val mIntent = Intent()
+        val componentName = ComponentName(DAEMON_PACKAGE, DAEMON_CLASS)
+        mIntent.component = componentName
+        mIntent.putExtra("pkg", appPkgName)
+        mIntent.putExtra("cls", appClzName)
+        mIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        context.startActivity(mIntent)
     }
 
     /**
