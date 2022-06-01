@@ -151,20 +151,23 @@ class Update {
                     }
 
                     override fun onComplete(task: DownloadTask?) {
-                        if (isPatch) mergeApk(autoInstall, isForce)
-                        else {
-                            if (!MD5Utils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
-                                updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
-                                LogPrintUtils.e("apk MD5校验失败")
-                                return
-                            }
-                            updateStatus.postValue(Pair(Status.FINISH, null))
-                            if (isForce) {
-                                path?.run {
-                                    if (autoInstall) {
-                                        autoInstallApk(this + NEW_APK_NAME)
-                                    } else {
-                                        installApk(this + NEW_APK_NAME)
+                        GlobalScope.launch {
+                            delay(300)
+                            if (isPatch) mergeApk(autoInstall, isForce)
+                            else {
+                                if (!MD5Utils.checkMd5(path + NEW_APK_NAME, latestApkMd5)) {
+                                    updateStatus.postValue(Pair(Status.ERROR, MD5_CHECKED_ERROR))
+                                    LogPrintUtils.e("apk MD5校验失败")
+                                } else {
+                                    updateStatus.postValue(Pair(Status.FINISH, null))
+                                    if (isForce) {
+                                        path?.run {
+                                            if (autoInstall) {
+                                                autoInstallApk(this + NEW_APK_NAME)
+                                            } else {
+                                                installApk(this + NEW_APK_NAME)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -172,7 +175,10 @@ class Update {
                     }
 
                     override fun onFail(task: DownloadTask?) {
-                        updateStatus.postValue(Pair(Status.ERROR, DOWNLOAD_ERROR))
+                        GlobalScope.launch {
+                            delay(300)
+                            updateStatus.postValue(Pair(Status.ERROR, DOWNLOAD_ERROR))
+                        }
                         LogPrintUtils.e("下载失败")
                     }
                 })
