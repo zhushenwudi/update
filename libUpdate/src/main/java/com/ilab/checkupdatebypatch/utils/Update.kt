@@ -2,6 +2,7 @@ package com.ilab.checkupdatebypatch.utils
 
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.MutableLiveData
 import com.arialyy.aria.core.task.DownloadTask
 import com.kunminx.architecture.ui.callback.UnPeekLiveData
 import dev.utils.LogPrintUtils
@@ -17,10 +18,12 @@ class Update {
     private lateinit var versionCode: String
     private lateinit var appContext: Application
     private lateinit var packageName: String
+    private lateinit var className: String
     private var viewModelScope: CoroutineScope? = null
     private var latestApkMd5: String? = null
     private var fileUrl: String? = null
     private var path: String? = null
+    private val openDaemon = MutableLiveData<Long>()
 
     enum class Status {
         PATCH,          // 准备差量更新
@@ -37,23 +40,28 @@ class Update {
             System.loadLibrary("ApkPatchLibrary")
         } catch (ignore: Exception) {
         }
+
+        openDaemon.observeForever {
+            ApkUtils.openDaemon(appContext.applicationContext, packageName, className)
+        }
     }
 
     /**
      * 绑定更新实体
      *
      * @param scope 上下文作用域
-     * @param triple first: app上下文; second: 包名; third: Pair(版本名, 版本号)
+     * @param triple first: app上下文; second: Pair(包名,启动类名); third: Pair(版本名, 版本号)
      * @param mutableData 用于接收回调
      */
     fun bind(
         scope: CoroutineScope,
-        triple: Triple<Application, String, Pair<String, String>>,
+        triple: Triple<Application, Pair<String, String>, Pair<String, String>>,
         mutableData: UnPeekLiveData<Pair<Status, Any?>>
     ): Update {
         viewModelScope = scope
         appContext = triple.first
-        packageName = triple.second
+        packageName = triple.second.first
+        className = triple.second.second
         versionName = triple.third.first
         versionCode = triple.third.second
         updateStatus = mutableData
@@ -226,6 +234,9 @@ class Update {
                 LogPrintUtils.e(FILE_MISS)
                 return
             }
+            if (it == this.path) {
+                openDaemon.postValue(System.currentTimeMillis())
+            }
             AppUtils.installApp(file)
         } ?: kotlin.run {
             updateStatus.postValue(Pair(Status.ERROR, NOT_FOUND_APK))
@@ -242,6 +253,9 @@ class Update {
                 updateStatus.postValue(Pair(Status.ERROR, FILE_MISS))
                 LogPrintUtils.e(FILE_MISS)
                 return
+            }
+            if (it == this.path) {
+                openDaemon.postValue(System.currentTimeMillis())
             }
             ShellUtils.execCmd("chmod 777 $it", true)
             AppUtils.installAppSilent(file, "-r", true)
